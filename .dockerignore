@@ -25,3 +25,7 @@ tests/
 *.png
 *.jpg
 *.jpeg
+*.gif
+*.mp4
+# README assets: the image copies the tree, but nothing at runtime reads these.
+docs/

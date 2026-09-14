@@ -27,6 +27,12 @@ free of the shape checkpoint.
 
 ---
 
+## Demo
+
+![Painting a mesh from a photo with the Gradio front-end](docs/demo.gif)
+
+---
+
 ## Quick start
 
 ```bash
@@ -371,6 +377,7 @@ ui/
 ├── viewers.py              trimesh helpers for the Model3D viewers
 └── config.py               settings from H3D_UI_*
 third_party/Hunyuan3D-2/    vendored upstream code (hy3dgen) + its license
+docs/                       the demo GIF shown above
 Dockerfile.ui · requirements-ui.txt   the front-end image (no torch, no CUDA)
 tests/                      pytest suite
 ```
