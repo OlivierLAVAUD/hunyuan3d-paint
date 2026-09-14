@@ -1,0 +1,53 @@
+# syntax=docker/dockerfile:1
+#
+# Hunyuan3D texture (paint) front-end (Gradio).
+#
+# Separate image from the API on purpose:
+#   * it needs neither CUDA nor torch - the whole point of the service split is
+#     that the browser-facing process stays cheap;
+#   * it is published on its own port, so the GPU host is not exposed;
+#   * it can point at any API instance through H3D_UI_API_URL, including one
+#     running on another machine (or on the shape repo's box, since the two
+#     services are independent).
+#
+# The build context is the repository root (both `ui/` and the `app/config.py`
+# helpers are copied in).
+
+FROM python:3.13-slim
+
+ENV DEBIAN_FRONTEND=noninteractive \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    # Gradio's own telemetry, and the temp files it serves to the browser.
+    GRADIO_ANALYTICS_ENABLED=False \
+    GRADIO_TEMP_DIR=/data/ui/tmp
+
+# curl is only there for the healthcheck below.
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Dependencies first: editing the UI code does not re-install gradio.
+COPY requirements-ui.txt /tmp/requirements-ui.txt
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install -r /tmp/requirements-ui.txt
+
+# `ui/` is the front-end; `app/` is copied for app.config only (the H3D_*
+# environment parsing helpers, which have no third-party import).
+COPY ui /app/ui
+COPY app /app/app
+
+# Downloaded artifacts (viewers + download links) and gradio's temp dir.
+RUN mkdir -p /data/ui/tmp
+
+EXPOSE 7861
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \
+    CMD curl -fsS http://127.0.0.1:7861/ >/dev/null || exit 1
+
+CMD ["python", "-m", "ui.app"]

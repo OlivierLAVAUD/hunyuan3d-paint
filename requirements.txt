@@ -1,0 +1,53 @@
+# Hunyuan3D texture (paint) API - runtime dependencies.
+#
+# Versions mirror the environment the paint pipeline was validated in
+# (Python 3.13, torch 2.14.0+cu130, diffusers 0.40, transformers 5.17).
+#
+# torch / torchvision are NOT listed here: the Dockerfile installs them first
+# from the CUDA wheel index (they must match the host driver, and a requirements
+# pin would silently downgrade that install).
+#
+# There is no rembg and no onnxruntime here, unlike the shape service: paint
+# takes the reference image as it comes, de-lights it itself, and background
+# removal belongs to the shape stage that produced the mesh.
+
+# --- API -------------------------------------------------------------------
+fastapi==0.141.1
+uvicorn==0.52.4
+python-multipart==0.0.32
+pydantic==2.13.5
+
+# --- Hunyuan3D-2 paint inference -------------------------------------------
+diffusers==0.40.0
+transformers==5.17.0
+accelerate==1.15.0
+safetensors==0.8.0
+einops==0.8.2
+omegaconf==2.3.1
+PyYAML>=6.0
+opencv-python==5.0.0.93
+scikit-image==0.26.0
+huggingface-hub==1.31.0
+
+# --- Mesh processing -------------------------------------------------------
+trimesh==4.11.5
+# trimesh's Taubin/Laplacian smoothing builds a scipy.sparse operator
+# (`trimesh.smoothing` imports `coo_matrix` at module level). Without scipy the
+# smoothing step is skipped and logged as a warning, so the mesh is exported
+# raw - a silent quality loss rather than a crash. Pinned here so it cannot
+# happen on the image.
+scipy==1.16.2
+# trimesh delegates quadric decimation to fast_simplification; without it the
+# mesh is kept at its input face count instead of being simplified.
+fast-simplification==0.2.0
+# Read by the vendored custom rasterizer to load GLB files (`io_glb.py`).
+pygltflib==1.16.5
+# The UV unwrap. Without it a marching-cubes mesh (the shape service's raw GLB,
+# a bare STL) cannot be textured at all - the paint model's output *is* a
+# texture atlas.
+xatlas==0.0.11
+
+# --- Numeric / imaging -----------------------------------------------------
+numpy==2.5.3
+Pillow==12.3.0
+tqdm==4.70.0

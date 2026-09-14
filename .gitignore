@@ -1,0 +1,21 @@
+# Data produced by the service
+data/
+outputs/
+uploads/
+models/
+*.stl
+*.glb
+*.obj
+*.ply
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+
+# Config / secrets
+.env

@@ -1,0 +1,27 @@
+# Never ship local state, caches or test scaffolding into the image.
+.git
+.gitignore
+.github/
+.venv/
+venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+.pytest_cache/
+.ruff_cache/
+.env
+data/
+outputs/
+uploads/
+models/
+tests/
+*.log
+*.stl
+*.glb
+*.obj
+*.ply
+*.png
+*.jpg
+*.jpeg

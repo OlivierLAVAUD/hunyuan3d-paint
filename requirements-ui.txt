@@ -1,0 +1,18 @@
+# Gradio front-end (Mesh + Image -> Texture) - runtime dependencies.
+#
+# Deliberately tiny: the front-end is an API client, so there is no torch, no
+# pymeshlab and no xatlas here. It runs in its own container (see
+# Dockerfile.ui) and can be pointed at any API instance with H3D_UI_API_URL.
+#
+# `app/config.py` is imported for the H3D_* environment helpers, hence app/ is
+# copied into the UI image - it has no third-party import of its own.
+#
+# scipy is deliberately absent: trimesh pulls it in only for its optional
+# per-face colour and geometry helpers, and ui/viewers.py is written so that the
+# viewer export (plain load, tint, GLB write) needs none of it.
+
+gradio==6.27.0
+httpx==0.28.1
+trimesh==4.11.5
+numpy==2.5.3
+Pillow==12.3.0

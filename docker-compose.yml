@@ -1,0 +1,160 @@
+services:
+  hunyuan3d-paint-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        # Bump these together with the host driver. cu130 needs driver >= 580.
+        TORCH_INDEX_URL: ${TORCH_INDEX_URL:-https://download.pytorch.org/whl/cu130}
+        TORCH_VERSION: ${TORCH_VERSION:-2.14.0}
+        TORCHVISION_VERSION: ${TORCHVISION_VERSION:-0.29.0}
+        # The paint model's extensions are compiled from this CUDA devel image:
+        # keep it on the same CUDA minor as the wheels above. No GPU is visible
+        # during the build, so TORCH_CUDA_ARCH_LIST names the targets instead.
+        CUDA_VERSION: ${CUDA_VERSION:-13.0.2}
+        TORCH_CUDA_ARCH_LIST: "${TORCH_CUDA_ARCH_LIST:-8.6;8.9;12.0}"
+    image: hunyuan3d-paint-api:latest
+    container_name: hunyuan3d-paint-api
+    ports:
+      - "${H3D_PORT:-8082}:8082"
+    environment:
+      H3D_HOST: 0.0.0.0
+      H3D_PORT: 8082
+      H3D_LOG_LEVEL: ${H3D_LOG_LEVEL:-info}
+
+      # Where the artifacts and the Hugging Face cache live inside the volume.
+      H3D_OUTPUT_DIR: /data/outputs
+      H3D_UPLOAD_DIR: /data/uploads
+      H3D_MODEL_CACHE_DIR: /data/models
+
+      # The paint (multiview texture) model, and its de-lighting companion which
+      # the pipeline loads alongside it.
+      H3D_MODEL_ID: ${H3D_MODEL_ID:-tencent/Hunyuan3D-2}
+      H3D_MODEL_SUBFOLDER: ${H3D_MODEL_SUBFOLDER:-hunyuan3d-paint-v2-0-turbo}
+      H3D_DEVICE: ${H3D_DEVICE:-auto}
+      # 0 = load the ~7.5 GB checkpoint on the first request. Off by default:
+      # the load is minutes long and most deployments send their first job well
+      # after the container came up.
+      H3D_PRELOAD_MODEL: ${H3D_PRELOAD_MODEL:-0}
+
+      # --- The two guards in front of that load -----------------------------
+      # 1. Host RAM: the UNet is read into *system* memory before it moves to
+      #    the GPU, so below this the container is OOM-killed mid-load and the
+      #    client only sees a dropped socket. "Reachable" excludes swap the
+      #    container is not allowed to use.
+      H3D_MIN_HOST_RAM_GB: ${H3D_MIN_HOST_RAM_GB:-14}
+      # 2. VRAM: the full-resident set is ~8 GB of fp16 weights (multiview
+      #    ~5.3 + delight ~2.2 + renderer ~0.7), so a 6 GB card fails however
+      #    much RAM the host has. Checked with nvidia-smi before the load
+      #    starts, so the answer is "your GPU is too small" rather than a
+      #    CUDA driver error mid-load. 0 disables the check.
+      H3D_MIN_VRAM_GB: ${H3D_MIN_VRAM_GB:-9}
+      # Build the pipelines CPU-first and stream the weights from system RAM
+      # one sub-module at a time (sequential CPU offload), so what has to fit
+      # on the card is the largest block, not the whole checkpoint. The way
+      # to run this on a 6 GB GPU; much slower (weights cross PCIe at every
+      # diffusion step) and it keeps the checkpoint resident in host RAM.
+      # H3D_MIN_VRAM_LOW_GB is the separate budget that mode enforces (the
+      # renderer, the CUDA context and the activations are not offloaded).
+      H3D_LOW_VRAM: ${H3D_LOW_VRAM:-0}
+      H3D_MIN_VRAM_LOW_GB: ${H3D_MIN_VRAM_LOW_GB:-3}
+
+      # Texture defaults (see .env.example for the full list).
+      H3D_DEFAULT_TEXTURE_SIZE: ${H3D_DEFAULT_TEXTURE_SIZE:-768}
+      H3D_DEFAULT_TARGET_FACES: ${H3D_DEFAULT_TARGET_FACES:-50000}
+      H3D_DEFAULT_TAUBIN_STEPS: ${H3D_DEFAULT_TAUBIN_STEPS:-20}
+      H3D_DEFAULT_UV_UNWRAP: ${H3D_DEFAULT_UV_UNWRAP:-1}
+      # Multiview diffusion seed. It has to be passed explicitly: the image
+      # carries no .env (.dockerignore), so a value that only lives there -
+      # and this is the one default that is deliberately machine-specific -
+      # would never reach the container. -1 draws a fresh seed per job.
+      H3D_DEFAULT_SEED: ${H3D_DEFAULT_SEED:-0}
+
+      # Only one GPU, so only one job at a time by default.
+      H3D_MAX_CONCURRENT_JOBS: ${H3D_MAX_CONCURRENT_JOBS:-1}
+      # Reference images are photos; meshes are geometry and get their own,
+      # larger ceiling.
+      H3D_MAX_UPLOAD_MB: ${H3D_MAX_UPLOAD_MB:-32}
+      H3D_MAX_MESH_UPLOAD_MB: ${H3D_MAX_MESH_UPLOAD_MB:-256}
+
+      # Fragmentation over a long-running server; keep in sync with entrypoint.sh.
+      PYTORCH_CUDA_ALLOC_CONF: ${PYTORCH_CUDA_ALLOC_CONF:-expandable_segments:True}
+      HF_HUB_ENABLE_HF_TRANSFER: "0"
+      # Host RAM the model allocator may use for the arena it never returns to
+      # the OS. WSL2's default 4.2 MiB is tiny for torch: a few hundred arena
+      # extensions and every subsequent tensor allocation fails, which surfaces
+      # as "CUDA out of memory" (a *host* RAM failure) or as a mid-run abort.
+      # Harmless where the limit is already larger: a child process may raise a
+      # soft RLIMIT_MEMLOCK.
+      MALLOC_ARENA_MAX: ${MALLOC_ARENA_MAX:-2}
+    # Memory budget. Two separate cgroup knobs, and the *difference* between
+    # them is what allows swapping:
+    #   mem_limit     -> memory.max      (RAM ceiling)
+    #   memswap_limit -> memory.swap.max + memory.max (RAM **plus** swap)
+    # Setting `memswap_limit == mem_limit` translates to `memory.swap.max=0`,
+    # i.e. swap is disabled for the container. That is fatal here: the paint
+    # checkpoint peaks at ~14 GB of anonymous memory during load, and with no
+    # swap to spill into, the cgroup OOM killer takes uvicorn at the ceiling.
+    # Keep memswap_limit comfortably above mem_limit so the overflow lands in
+    # the WSL swap file instead of killing the process.
+    mem_limit: ${H3D_MEM_LIMIT:-15g}
+    memswap_limit: ${H3D_MEMSWAP_LIMIT:-31g}
+    volumes:
+      # Outputs, uploads and the HF cache in one volume so `docker compose
+      # down` never loses a painted mesh or re-downloads ~14 GB of weights.
+      - h3d-paint-data:/data
+      # Dev fast-path: bind-mount the sources so code edits only need
+      # `docker compose restart`. Uncomment while iterating.
+      # - ./app:/app/app
+      # - ./main.py:/app/main.py
+    # GPU access. `deploy.resources` is honoured by `docker compose up`; the
+    # older `runtime: nvidia` / gpus: all spelling also works.
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    restart: unless-stopped
+
+  # Gradio front-end: the "Mesh + Image -> Texture" page, in its own container.
+  #
+  #   docker compose up -d                    # API + UI
+  #   docker compose up -d hunyuan3d-paint-api   # API only
+  #
+  # It talks to the API over the compose network, so it needs no GPU and no
+  # torch - that is the whole point of the split. Point H3D_UI_API_URL at
+  # another host to use a remote API instead.
+  hunyuan3d-paint-ui:
+    build:
+      context: .
+      dockerfile: Dockerfile.ui
+    image: hunyuan3d-paint-ui:latest
+    container_name: hunyuan3d-paint-ui
+    ports:
+      # 7861, not the shape front-end's 7860: the two services are meant to be
+      # run side by side.
+      - "${H3D_UI_PORT:-7861}:7861"
+    environment:
+      # Service name, not localhost: the UI is its own container.
+      H3D_UI_API_URL: ${H3D_UI_API_URL:-http://hunyuan3d-paint-api:8082}
+      H3D_UI_HOST: 0.0.0.0
+      H3D_UI_PORT: 7861
+      # Must outlast a paint run (~2-3 min at 768 px).
+      H3D_UI_TIMEOUT_S: ${H3D_UI_TIMEOUT_S:-1800}
+      H3D_UI_DATA_DIR: /data/ui
+      H3D_UI_TITLE: ${H3D_UI_TITLE:-Hunyuan3D — Mesh + Image → Texture}
+      GRADIO_ANALYTICS_ENABLED: "False"
+    volumes:
+      # Its own volume, not the shape service's: the two front-ends download
+      # their artifacts independently and must not overwrite each other's.
+      - h3d-paint-data:/data
+    depends_on:
+      # Only ordering: the model takes minutes to load, and the page is
+      # precisely what reports /ready while it does.
+      - hunyuan3d-paint-api
+    restart: unless-stopped
+
+volumes:
+  h3d-paint-data:
