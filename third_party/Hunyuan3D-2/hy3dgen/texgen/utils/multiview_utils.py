@@ -11,6 +11,17 @@
 # optimizer states), machine-learning model code, inference-enabling code, training-enabling code,
 # fine-tuning enabling code and other elements of the foregoing made publicly available
 # by Tencent in accordance with TENCENT HUNYUAN COMMUNITY LICENSE AGREEMENT.
+#
+# ---------------------------------------------------------------------------
+# MODIFIED.  This file is not the copy published by Tencent.  Changed by the
+# Hunyuan3D-Paint project (https://github.com/OlivierLAVAUD/hunyuan3d-paint)
+# on 2026-09-14.  See LICENSING.md at the repository root for the full list.
+#
+# Change: the multiview pass takes an optional seed instead of being pinned to 0,
+# the diffusion generator is created from pipeline._execution_device because
+# pipeline.device reads 'meta' under sequential CPU offload, and the pipeline is
+# loaded with low_cpu_mem_usage=True and trust_remote_code=True.
+# ---------------------------------------------------------------------------
 
 import os
 import random

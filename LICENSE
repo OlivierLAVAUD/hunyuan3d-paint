@@ -19,10 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-The vendored third-party code under third_party/Hunyuan3D-2 (the hy3dgen
-package) is NOT covered by the license above. It is distributed under the
-Tencent Hunyuan Community License, which is non-commercial; see
-third_party/Hunyuan3D-2/LICENSE and third_party/Hunyuan3D-2/NOTICE.

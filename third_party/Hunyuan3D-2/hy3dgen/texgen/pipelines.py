@@ -11,6 +11,20 @@
 # optimizer states), machine-learning model code, inference-enabling code, training-enabling code,
 # fine-tuning enabling code and other elements of the foregoing made publicly available
 # by Tencent in accordance with TENCENT HUNYUAN COMMUNITY LICENSE AGREEMENT.
+#
+# ---------------------------------------------------------------------------
+# MODIFIED.  This file is not the copy published by Tencent.  Changed by the
+# Hunyuan3D-Paint project (https://github.com/OlivierLAVAUD/hunyuan3d-paint)
+# on 2026-09-14.  See LICENSING.md at the repository root for the full list.
+#
+# Change: the pipeline device is read from HY3DGEN_TEXGEN_DEVICE instead of
+# being hardcoded to 'cuda'; enable_sequential_cpu_offload() was added, and it
+# first turns the paint UNet's learned_text_clip_gen / learned_text_clip_ref
+# parameters into buffers, because accelerate's sequential offload parks
+# parameters on the 'meta' device while the pipeline reads those two outside a
+# forward pass; Hunyuan3DPaintPipeline.__call__ takes an optional seed and
+# forwards it to the multiview pass.
+# ---------------------------------------------------------------------------
 
 
 import logging

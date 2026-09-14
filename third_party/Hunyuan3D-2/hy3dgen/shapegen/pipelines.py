@@ -11,6 +11,19 @@
 # optimizer states), machine-learning model code, inference-enabling code, training-enabling code,
 # fine-tuning enabling code and other elements of the foregoing made publicly available
 # by Tencent in accordance with TENCENT HUNYUAN COMMUNITY LICENSE AGREEMENT.
+#
+# ---------------------------------------------------------------------------
+# MODIFIED.  This file is not the copy published by Tencent.  Changed by the
+# Hunyuan3D-Paint project (https://github.com/OlivierLAVAUD/hunyuan3d-paint)
+# on 2026-09-13.  See LICENSING.md at the repository root for the full list.
+#
+# Change: checkpoint loading is device- and dtype-aware - the weights are mapped
+# straight to CUDA when available, every module is instantiated in the
+# checkpoint dtype instead of fp32, and the checkpoint tensors are released
+# before the model moves to the device.  On a small host the upstream path
+# otherwise trips the OOM killer on a ~3.8 GB fp16 checkpoint and transiently
+# allocates about twice that much in host RAM.
+# ---------------------------------------------------------------------------
 
 import copy
 import importlib

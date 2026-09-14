@@ -380,6 +380,7 @@ third_party/Hunyuan3D-2/    vendored upstream code (hy3dgen) + its license
 docs/                       the demo GIF shown above
 Dockerfile.ui · requirements-ui.txt   the front-end image (no torch, no CUDA)
 tests/                      pytest suite
+LICENSE · NOTICE · LICENSING.md       MIT for this repo, Tencent's notices for the vendored code
 ```
 
 ### Design notes
@@ -440,8 +441,16 @@ Copyright (c) 2026 oLV - Olivier LAVAUD
 See [`LICENSE`](LICENSE) for the full text.
 
 `third_party/Hunyuan3D-2` (the vendored `hy3dgen` package) is **not** covered by
-that license. It is distributed under the **Tencent Hunyuan Community License**
-— see [`third_party/Hunyuan3D-2/LICENSE`](third_party/Hunyuan3D-2/LICENSE) and
-[`third_party/Hunyuan3D-2/NOTICE`](third_party/Hunyuan3D-2/NOTICE) — and is
-**non-commercial**: building and running this image pulls that checkpoint and
-those terms apply to it.
+that license. It keeps Tencent's own terms — the **Tencent Hunyuan 3D 2.0
+Community License Agreement** (Release Date: January 21, 2025), shipped verbatim
+at [`third_party/Hunyuan3D-2/LICENSE`](third_party/Hunyuan3D-2/LICENSE) with
+[`third_party/Hunyuan3D-2/NOTICE`](third_party/Hunyuan3D-2/NOTICE). Five of its
+files are patched and carry a modification notice in their header.
+
+Those terms are royalty-free and **do** allow commercial use, up to the
+monthly-active-user threshold in their Section 4. They exclude the European
+Union, the United Kingdom and South Korea, and they require the notices in
+[`NOTICE`](NOTICE) and [`LICENSING.md`](LICENSING.md) — read that file before
+redistributing or building a product on this. The model checkpoints are not
+distributed here: the image downloads them at first start, and the same terms
+apply to that download.

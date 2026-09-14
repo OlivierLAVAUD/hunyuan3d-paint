@@ -1,0 +1,45 @@
+NOTICE
+======
+
+Hunyuan3D-Paint — https://github.com/OlivierLAVAUD/hunyuan3d-paint
+
+This repository combines two bodies of code. They are not under the same
+license, and the license of one does not apply to the other.
+
+1. The service itself — MIT License
+-----------------------------------
+
+`app/`, `ui/`, `scripts/`, `tests/`, `main.py` and the Dockerfiles are original
+work, Copyright (c) 2026 oLV - Olivier LAVAUD, released under the MIT License.
+See LICENSE.
+
+2. The vendored model code — Tencent Hunyuan 3D 2.0 Community License
+--------------------------------------------------------------------
+
+`third_party/Hunyuan3D-2/` is Tencent's `hy3dgen` package, redistributed
+unmodified except for the files listed in LICENSING.md, which carry a
+modification notice in their header. It is not covered by the MIT License
+above. It is governed by the Tencent Hunyuan 3D 2.0 Community License Agreement
+(Release Date: January 21, 2025), whose full text ships with it:
+
+    third_party/Hunyuan3D-2/LICENSE
+    third_party/Hunyuan3D-2/NOTICE
+
+That agreement grants a non-exclusive, royalty-free license for use,
+reproduction, modification and distribution, and permits commercial use up to
+the monthly-active-user threshold in its Section 4. It does not apply in the
+European Union, the United Kingdom or South Korea — see its Section 1.l and
+Section 5.c. LICENSING.md at the repository root sets out the scope, the
+obligations, and the files that were changed.
+
+REQUIRED NOTICE
+---------------
+
+Section 3.d of the Tencent Hunyuan 3D 2.0 Community License Agreement requires
+this notice to accompany distributions of the works. It is reproduced verbatim:
+
+Tencent Hunyuan 3D 2.0 is licensed under the Tencent Hunyuan 3D 2.0 Community License Agreement, Copyright © 2025 Tencent. All Rights Reserved. The trademark rights of “Tencent Hunyuan” are owned by Tencent or its affiliate.
+
+The model checkpoints are not distributed here. They are downloaded from the
+Hugging Face Hub at first start, and those downloads are subject to the same
+agreement.
